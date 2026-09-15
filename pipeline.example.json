@@ -1,0 +1,13 @@
+{
+  "root_dir": "./pipeline-work",
+  "input_csv": "input/source.csv",
+  "output_csv": "output/result.csv",
+  "encoding": "utf-8-sig",
+  "overwrite": false,
+  "operations": [
+    {"type": "drop_empty_rows"},
+    {"type": "deduplicate", "on": ["id"]},
+    {"type": "rename_columns", "mapping": {"name": "display_name"}},
+    {"type": "sort", "by": ["id"]}
+  ]
+}
