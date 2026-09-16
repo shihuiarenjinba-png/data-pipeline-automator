@@ -9,63 +9,111 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
 from data_pipeline import Pipeline, PipelineError
+from ui_language import load_language, save_language
+
+APP_ID = "data-pipeline-automator"
 
 
 class DataPipelineDesktop:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Data Pipeline Automator / データ変換")
-        self.root.geometry("1000x720")
-        self.root.minsize(850, 620)
+        self.lang = load_language(APP_ID)
+        self.root.geometry("1000x740")
+        self.root.minsize(850, 640)
         self.config_path = tk.StringVar()
-        self.status = tk.StringVar(value="Ready / 準備完了")
+        self.status = tk.StringVar(value="")
         self.config: dict | None = None
         self._build()
         default = Path(__file__).resolve().parent / "pipeline.example.json"
         if default.is_file():
             self.config_path.set(str(default))
             self._load_config(False)
+        else:
+            self.status.set(self.t("準備完了", "Ready"))
+
+    def t(self, ja: str, en: str) -> str:
+        return en if self.lang == "en" else ja
 
     def _build(self) -> None:
+        for child in self.root.winfo_children():
+            child.destroy()
+        self.root.title(self.t("データ変換", "Data Pipeline Automator"))
+
         outer = ttk.Frame(self.root, padding=18)
         outer.pack(fill="both", expand=True)
-        ttk.Label(outer, text="Data Pipeline Automator", font=("Segoe UI", 18, "bold")).pack(anchor="w")
-        ttk.Label(outer, text="CSVを決められたルールで変換。出力前にDry Runで行数・列・Formula安全性を確認します。").pack(anchor="w", pady=(0, 14))
 
-        cfg = ttk.LabelFrame(outer, text="Configuration / 設定", padding=10)
+        language = ttk.Frame(outer)
+        language.pack(fill="x", pady=(0, 8))
+        ttk.Label(language, text="言語 / Language", font=("Segoe UI", 9, "bold")).pack(side="right", padx=(0, 6))
+        self.language_var = tk.StringVar(value="日本語" if self.lang == "ja" else "English")
+        combo = ttk.Combobox(language, textvariable=self.language_var, values=("日本語", "English"), state="readonly", width=10)
+        combo.pack(side="right")
+        combo.bind("<<ComboboxSelected>>", self._language_changed)
+
+        ttk.Label(outer, text=self.t("データ変換", "Data Pipeline Automator"), font=("Segoe UI", 18, "bold")).pack(anchor="w")
+        ttk.Label(
+            outer,
+            text=self.t(
+                "CSVを決められたルールで変換します。出力前にPreviewで行数・列・Formula安全性を確認します。",
+                "Transforms CSV data using configured rules. Preview row/column/formula safety before writing output.",
+            ),
+        ).pack(anchor="w", pady=(0, 14))
+
+        cfg = ttk.LabelFrame(outer, text=self.t("設定", "Configuration"), padding=10)
         cfg.pack(fill="x", pady=(0, 10))
         ttk.Entry(cfg, textvariable=self.config_path).pack(side="left", fill="x", expand=True)
-        ttk.Button(cfg, text="Browse / 選択", command=self._browse).pack(side="left", padx=(8, 0))
-        ttk.Button(cfg, text="Validate / 検証", command=lambda: self._load_config(True)).pack(side="left", padx=(6, 0))
+        ttk.Button(cfg, text=self.t("選択", "Browse"), command=self._browse).pack(side="left", padx=(8, 0))
+        ttk.Button(cfg, text=self.t("検証", "Validate"), command=lambda: self._load_config(True)).pack(side="left", padx=(6, 0))
 
-        summary_box = ttk.LabelFrame(outer, text="Pipeline / パイプライン概要", padding=8)
+        summary_box = ttk.LabelFrame(outer, text=self.t("パイプライン概要", "Pipeline"), padding=8)
         summary_box.pack(fill="both", expand=True, pady=(0, 10))
         self.summary = ttk.Treeview(summary_box, columns=("item", "value"), show="headings", height=7)
-        self.summary.heading("item", text="Item / 項目")
-        self.summary.heading("value", text="Value / 内容")
+        self.summary.heading("item", text=self.t("項目", "Item"))
+        self.summary.heading("value", text=self.t("内容", "Value"))
         self.summary.column("item", width=220, anchor="w")
         self.summary.column("value", width=700, anchor="w")
         self.summary.pack(fill="x")
-        ttk.Label(summary_box, text="Operations / 変換手順").pack(anchor="w", pady=(10, 4))
+        ttk.Label(summary_box, text=self.t("変換手順", "Operations")).pack(anchor="w", pady=(10, 4))
         self.operations = tk.Listbox(summary_box, height=7)
         self.operations.pack(fill="both", expand=True)
 
-        actions = ttk.LabelFrame(outer, text="Preview and Run / 確認と実行", padding=10)
+        actions = ttk.LabelFrame(outer, text=self.t("確認と実行", "Preview and Run"), padding=10)
         actions.pack(fill="x", pady=(0, 10))
-        self.preview_btn = ttk.Button(actions, text="Preview / Dry Run", command=self._preview)
+        self.preview_btn = ttk.Button(actions, text=self.t("Preview / Dry Run", "Preview / Dry Run"), command=self._preview)
         self.preview_btn.pack(side="left")
-        self.run_btn = ttk.Button(actions, text="Run Pipeline / 変換実行", command=self._run)
+        self.run_btn = ttk.Button(actions, text=self.t("変換実行", "Run Pipeline"), command=self._run)
         self.run_btn.pack(side="left", padx=6)
-        ttk.Label(actions, text="既定formula policyは reject。Excel等で式として評価され得る値を検出すると出力を止めます。", wraplength=560).pack(side="right")
+        ttk.Label(
+            actions,
+            text=self.t(
+                "既定Formula policyは reject。表計算ソフトで式として評価され得る値を検出すると出力を止めます。",
+                "Default formula policy is reject. Output stops when values could be evaluated as spreadsheet formulas.",
+            ),
+            wraplength=560,
+        ).pack(side="right")
 
-        logbox = ttk.LabelFrame(outer, text="Result / 結果", padding=8)
+        logbox = ttk.LabelFrame(outer, text=self.t("結果", "Result"), padding=8)
         logbox.pack(fill="both", expand=True)
         self.log = tk.Text(logbox, wrap="word", height=11, state="disabled", font=("Consolas", 9))
         self.log.pack(fill="both", expand=True)
         ttk.Label(outer, textvariable=self.status).pack(fill="x", pady=(8, 0))
 
+    def _language_changed(self, _event=None) -> None:
+        self.lang = "en" if self.language_var.get() == "English" else "ja"
+        save_language(APP_ID, self.lang)
+        self._build()
+        if self.config is not None:
+            try:
+                self._render(Pipeline(self.config, dry_run=True))
+            except Exception:
+                pass
+        self.status.set(self.t("準備完了", "Ready"))
+
     def _browse(self) -> None:
-        path = filedialog.askopenfilename(title="Pipeline JSON", filetypes=[("JSON", "*.json"), ("All", "*.*")])
+        path = filedialog.askopenfilename(
+            title=self.t("Pipeline JSONを選択", "Choose Pipeline JSON"),
+            filetypes=[("JSON", "*.json"), (self.t("すべてのファイル", "All files"), "*.*")],
+        )
         if path:
             self.config_path.set(path)
             self._load_config(True)
@@ -83,25 +131,25 @@ class DataPipelineDesktop:
             pipeline = Pipeline(raw, dry_run=True)
             self.config = raw
             self._render(pipeline)
-            self.status.set("Configuration valid / 設定OK")
+            self.status.set(self.t("設定OK", "Configuration valid"))
             return True
         except Exception as exc:
             self.config = None
-            self.status.set(f"Configuration error / 設定エラー: {type(exc).__name__}")
+            self.status.set(self.t(f"設定エラー: {type(exc).__name__}", f"Configuration error: {type(exc).__name__}"))
             if show_error:
-                messagebox.showerror("Configuration", str(exc))
+                messagebox.showerror(self.t("設定エラー", "Configuration error"), str(exc), parent=self.root)
             return False
 
     def _render(self, pipeline: Pipeline) -> None:
         for item in self.summary.get_children():
             self.summary.delete(item)
         rows = [
-            ("Input CSV / 入力", str(pipeline.input_path)),
-            ("Output CSV / 出力", str(pipeline.output_path)),
+            (self.t("入力CSV", "Input CSV"), str(pipeline.input_path)),
+            (self.t("出力CSV", "Output CSV"), str(pipeline.output_path)),
             ("Encoding", pipeline.encoding),
-            ("Overwrite / 上書き", str(pipeline.overwrite)),
+            (self.t("上書き", "Overwrite"), str(pipeline.overwrite)),
             ("Formula policy", pipeline.formula_policy),
-            ("Root / ルート", str(pipeline.root)),
+            (self.t("ルート", "Root"), str(pipeline.root)),
         ]
         for row in rows:
             self.summary.insert("", "end", values=row)
@@ -125,7 +173,8 @@ class DataPipelineDesktop:
         raw = self.config
         self.preview_btn.configure(state="disabled")
         self.run_btn.configure(state="disabled")
-        self.status.set("Previewing… / 確認中…" if dry_run else "Running… / 変換中…")
+        self.status.set(self.t("確認中…", "Previewing…") if dry_run else self.t("変換中…", "Running…"))
+
         def worker() -> None:
             buffer = io.StringIO()
             try:
@@ -136,13 +185,21 @@ class DataPipelineDesktop:
             except Exception as exc:
                 text = buffer.getvalue() + f"ERROR: {type(exc).__name__}: {exc}"
                 self.root.after(0, lambda: self._finish(False, text, dry_run))
+
         threading.Thread(target=worker, daemon=True).start()
 
     def _preview(self) -> None:
         self._execute(True)
 
     def _run(self) -> None:
-        if not messagebox.askyesno("Run Pipeline / 変換実行", "実際に出力ファイルを書き込みます。Previewで内容を確認済みの場合だけ続行してください。"):
+        if not messagebox.askyesno(
+            self.t("変換実行", "Run Pipeline"),
+            self.t(
+                "実際に出力ファイルを書き込みます。Previewで内容を確認済みの場合だけ続行してください。",
+                "This will write the output file. Continue only after reviewing Preview results.",
+            ),
+            parent=self.root,
+        ):
             return
         self._execute(False)
 
@@ -150,9 +207,11 @@ class DataPipelineDesktop:
         self._append(text)
         self.preview_btn.configure(state="normal")
         self.run_btn.configure(state="normal")
-        self.status.set(("Preview complete / 確認完了" if dry_run else "Pipeline complete / 変換完了") if ok else "Failed / 失敗")
-        if not ok:
-            messagebox.showerror("Data Pipeline", text[-1500:])
+        if ok:
+            self.status.set(self.t("確認完了", "Preview complete") if dry_run else self.t("変換完了", "Pipeline complete"))
+        else:
+            self.status.set(self.t("失敗", "Failed"))
+            messagebox.showerror(self.t("データ変換", "Data Pipeline"), text[-1500:], parent=self.root)
 
 
 def main() -> None:
