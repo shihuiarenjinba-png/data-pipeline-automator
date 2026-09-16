@@ -4,6 +4,7 @@ import argparse
 import csv
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -11,6 +12,20 @@ from typing import Any
 
 class PipelineError(RuntimeError):
     pass
+
+
+_NUMERIC_WITH_SIGN = re.compile(r"^[+-](?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$")
+
+
+def _looks_like_spreadsheet_formula(value: str) -> bool:
+    stripped = value.lstrip(" \t\r\n")
+    if not stripped:
+        return False
+    if stripped[0] in {"=", "@"}:
+        return True
+    if stripped[0] in {"+", "-"} and not _NUMERIC_WITH_SIGN.fullmatch(stripped):
+        return True
+    return False
 
 
 class Pipeline:
@@ -22,6 +37,9 @@ class Pipeline:
         self.output_path = self._path(str(config["output_csv"]))
         self.encoding = str(config.get("encoding", "utf-8-sig"))
         self.overwrite = bool(config.get("overwrite", False))
+        self.formula_policy = str(config.get("spreadsheet_formula_policy", "reject")).lower()
+        if self.formula_policy not in {"reject", "escape", "preserve"}:
+            raise PipelineError("spreadsheet_formula_policy must be reject, escape, or preserve")
         operations = config.get("operations", [])
         if not isinstance(operations, list):
             raise PipelineError("operations must be a list")
@@ -46,6 +64,10 @@ class Pipeline:
             if not reader.fieldnames:
                 raise PipelineError("CSV header is missing")
             fieldnames = [str(x) for x in reader.fieldnames]
+            if any(not field.strip() for field in fieldnames):
+                raise PipelineError("CSV header contains an empty column name")
+            if len(fieldnames) != len(set(fieldnames)):
+                raise PipelineError("CSV header contains duplicate column names")
             rows = [{k: (v or "") for k, v in row.items() if k is not None} for row in reader]
         return rows, fieldnames
 
@@ -60,6 +82,8 @@ class Pipeline:
 
             elif kind == "select_columns":
                 wanted = [str(x) for x in op.get("columns", [])]
+                if len(wanted) != len(set(wanted)):
+                    raise PipelineError("select_columns contains duplicate column names")
                 missing = [x for x in wanted if x not in fields]
                 if missing:
                     raise PipelineError(f"select_columns missing fields: {missing}")
@@ -67,11 +91,16 @@ class Pipeline:
                 fields = wanted
 
             elif kind == "rename_columns":
-                mapping = {str(k): str(v) for k, v in op.get("mapping", {}).items()}
+                raw_mapping = op.get("mapping", {})
+                if not isinstance(raw_mapping, dict):
+                    raise PipelineError("rename_columns mapping must be an object")
+                mapping = {str(k): str(v) for k, v in raw_mapping.items()}
                 missing = [x for x in mapping if x not in fields]
                 if missing:
                     raise PipelineError(f"rename_columns missing fields: {missing}")
                 new_fields = [mapping.get(f, f) for f in fields]
+                if any(not field.strip() for field in new_fields):
+                    raise PipelineError("rename_columns creates an empty column name")
                 if len(new_fields) != len(set(new_fields)):
                     raise PipelineError("rename_columns creates duplicate column names")
                 rows = [{mapping.get(k, k): v for k, v in row.items()} for row in rows]
@@ -79,6 +108,8 @@ class Pipeline:
 
             elif kind == "deduplicate":
                 on = [str(x) for x in op.get("on", fields)]
+                if not on:
+                    raise PipelineError("deduplicate requires at least one field")
                 missing = [x for x in on if x not in fields]
                 if missing:
                     raise PipelineError(f"deduplicate missing fields: {missing}")
@@ -93,6 +124,8 @@ class Pipeline:
 
             elif kind == "sort":
                 by = [str(x) for x in op.get("by", [])]
+                if not by:
+                    raise PipelineError("sort requires at least one field")
                 missing = [x for x in by if x not in fields]
                 if missing:
                     raise PipelineError(f"sort missing fields: {missing}")
@@ -103,11 +136,31 @@ class Pipeline:
                 raise PipelineError(f"Unsupported operation: {kind}")
         return rows, fields
 
+    def _prepare_output_rows(self, rows: list[dict[str, str]], fields: list[str]) -> list[dict[str, str]]:
+        prepared: list[dict[str, str]] = []
+        for row_number, row in enumerate(rows, start=2):
+            output: dict[str, str] = {}
+            for field in fields:
+                value = str(row.get(field, ""))
+                if _looks_like_spreadsheet_formula(value):
+                    if self.formula_policy == "reject":
+                        raise PipelineError(
+                            f"Potential spreadsheet formula detected at row {row_number}, column '{field}'. "
+                            "Set spreadsheet_formula_policy='escape' to export as text or 'preserve' only for trusted data."
+                        )
+                    if self.formula_policy == "escape":
+                        value = "'" + value
+                output[field] = value
+            prepared.append(output)
+        return prepared
+
     def write(self, rows: list[dict[str, str]], fields: list[str]) -> None:
         if self.output_path.exists() and not self.overwrite:
             raise PipelineError(f"Output already exists and overwrite=false: {self.output_path}")
+
+        safe_rows = self._prepare_output_rows(rows, fields)
         if self.dry_run:
-            print(json.dumps({"input": str(self.input_path), "output": str(self.output_path), "rows": len(rows), "columns": fields, "dry_run": True}, ensure_ascii=False))
+            print(json.dumps({"input": str(self.input_path), "output": str(self.output_path), "rows": len(safe_rows), "columns": fields, "formula_policy": self.formula_policy, "dry_run": True}, ensure_ascii=False))
             return
 
         self.output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -116,12 +169,14 @@ class Pipeline:
             with temp.open("w", encoding=self.encoding, newline="") as fh:
                 writer = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
                 writer.writeheader()
-                writer.writerows(rows)
+                writer.writerows(safe_rows)
+                fh.flush()
+                os.fsync(fh.fileno())
             os.replace(temp, self.output_path)
         finally:
             if temp.exists():
                 temp.unlink()
-        print(json.dumps({"output": str(self.output_path), "rows": len(rows), "columns": fields}, ensure_ascii=False))
+        print(json.dumps({"output": str(self.output_path), "rows": len(safe_rows), "columns": fields, "formula_policy": self.formula_policy}, ensure_ascii=False))
 
     def run(self) -> None:
         rows, fields = self.load()
