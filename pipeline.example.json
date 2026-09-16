@@ -4,6 +4,7 @@
   "output_csv": "output/result.csv",
   "encoding": "utf-8-sig",
   "overwrite": false,
+  "spreadsheet_formula_policy": "reject",
   "operations": [
     {"type": "drop_empty_rows"},
     {"type": "deduplicate", "on": ["id"]},
