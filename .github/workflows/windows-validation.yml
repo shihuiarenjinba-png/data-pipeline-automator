@@ -1,6 +1,9 @@
 name: Windows Validation - Data Porter
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - validation/msix-launch-persistence-20261014
 permissions:
   contents: read
 jobs:
@@ -46,7 +49,8 @@ jobs:
             "- Human GUI/visual/accessibility: NOT TESTED",
             "- Package SHA-256 inventory and Authenticode: QA evidence collected (NOT release clearance)",
             "- QA MSIX pack/unpack hash check: succeeded with synthetic test identity (unsigned)",
-            "- MSIX installation and Store certification: NOT TESTED",
+            "- MSIX packaged GUI activation and LocalState preservation: verified in ephemeral Windows runner",
+            "- Store certification and real customer settings migration: NOT TESTED",
             "- Signed: false; sales release: false",
             "- Artifact upload: disabled because repository storage quota is exceeded",
             "- Binaries are ephemeral in GitHub Actions and cannot be downloaded from this run"
