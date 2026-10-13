@@ -70,6 +70,10 @@ try {
     try {
         Export-Certificate -Cert $certificate -FilePath $cerPath -ErrorAction Stop | Out-Null
         Import-Certificate -FilePath $cerPath -CertStoreLocation "Cert:\CurrentUser\TrustedPeople" -ErrorAction Stop | Out-Null
+        $machineTrustPath = "Cert:\LocalMachine\TrustedPeople\$($certificate.Thumbprint)"
+        if (Test-Path -LiteralPath $machineTrustPath) { throw "QA certificate unexpectedly already trusted in machine store" }
+        Import-Certificate -FilePath $cerPath -CertStoreLocation "Cert:\LocalMachine\TrustedPeople" -ErrorAction Stop | Out-Null
+        if (-not (Test-Path -LiteralPath $machineTrustPath)) { throw "Machine-level trust could not be established" }
     } finally {
         if (Test-Path -LiteralPath $cerPath) { Remove-Item -LiteralPath $cerPath -Force }
     }
@@ -124,14 +128,15 @@ try {
     if ($certificate) {
         try {
             $thumbprint = $certificate.Thumbprint
-            foreach ($loc in @("Cert:\CurrentUser\TrustedPeople\$thumbprint",
+            foreach ($loc in @("Cert:\LocalMachine\TrustedPeople\$thumbprint",
+                               "Cert:\CurrentUser\TrustedPeople\$thumbprint",
                                "Cert:\CurrentUser\My\$thumbprint")) {
                 if (Test-Path -LiteralPath $loc) {
                     Remove-Item -LiteralPath $loc -Force -ErrorAction Stop
                 }
             }
-            if (Test-Path -LiteralPath "Cert:\CurrentUser\My\$thumbprint") {
-                throw "Certificate still present"
+            foreach ($loc in @("Cert:\LocalMachine\TrustedPeople\$thumbprint", "Cert:\CurrentUser\TrustedPeople\$thumbprint", "Cert:\CurrentUser\My\$thumbprint")) {
+                if (Test-Path -LiteralPath $loc) { throw "Test certificate still present" }
             }
             $certRemoved = $true
         } catch {
