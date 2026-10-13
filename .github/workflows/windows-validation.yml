@@ -21,6 +21,12 @@ jobs:
       - name: Validate package integrity and collect release-blocked QA evidence
         shell: pwsh
         run: .\qa\windows-acceptance.ps1 -Mode CI
+      - name: Validate local QA plan
+        shell: pwsh
+        run: .\qa\verify-five-products-local.ps1 -PlanOnly
+      - name: Build and verify unsigned TEST-IDENTITY MSIX prototype
+        shell: pwsh
+        run: .\qa\build-msix-preflight.ps1 -TestIdentity
       - name: Record unsigned validation manifest (artifact quota workaround)
         shell: pwsh
         run: |
@@ -36,6 +42,8 @@ jobs:
             "- Automated widget selection and real output: $($result.automated_gui_e2e_pass)",
             "- Human GUI/visual/accessibility: NOT TESTED",
             "- Package SHA-256 inventory and Authenticode: QA evidence collected (NOT release clearance)",
+            "- QA MSIX pack/unpack hash check: succeeded with synthetic test identity (unsigned)",
+            "- MSIX installation and Store certification: NOT TESTED",
             "- Signed: false; sales release: false",
             "- Artifact upload: disabled because repository storage quota is exceeded",
             "- Binaries are ephemeral in GitHub Actions and cannot be downloaded from this run"
