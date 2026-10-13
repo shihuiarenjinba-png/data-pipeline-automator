@@ -44,3 +44,8 @@ Excel対応は後から `openpyxl` Adapterとして分離して追加する予�
 Windows検証ビルド: `powershell -ExecutionPolicy Bypass -File .\\build-windows-validation.ps1`。
 `.github/workflows/windows-validation.yml` からも手動テスト可能。
 実機動作、署名、AV、販売審査は未完了。生成物は**未署名・販売不可の検証版**。
+
+
+## Windows QA evidence and manual acceptance (2026-10-13)
+
+Automated Windows packaging + GUI output tests and distribution-hash evidence are implemented. See [Windows QA Runbook](docs/WINDOWS_QA_RUNBOOK.md). This is **not a sales release**; manual acceptance, Defender review and signed distribution are pending.
