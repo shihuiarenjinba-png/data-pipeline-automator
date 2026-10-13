@@ -47,7 +47,7 @@ def run(gui_type, product: str, expected: dict[str, str]) -> None:
             if mode == "write":
                 variable.set(value)
             else:
-                if variable.get() != value:
+                if str(variable.get()) != value:
                     raise AssertionError(f"Persisted GUI preference did not restore: {name}")
         if mode == "write":
             _save_button(app).invoke()
