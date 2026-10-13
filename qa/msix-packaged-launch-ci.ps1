@@ -57,7 +57,17 @@ namespace QaShell {
             out uint processId);
     }
     [ComImport, Guid("45BA127D-10A8-46EA-8AB7-56EA9078943C")]
-    public class ApplicationActivationManager { }
+    public class ApplicationActivationManager : IApplicationActivationManager {
+        [System.Runtime.CompilerServices.MethodImpl(
+          System.Runtime.CompilerServices.MethodImplOptions.InternalCall,
+          MethodCodeType = System.Runtime.CompilerServices.MethodCodeType.Runtime),
+          PreserveSig]
+        public extern int ActivateApplication(
+            [MarshalAs(UnmanagedType.LPWStr)] string appUserModelId,
+            [MarshalAs(UnmanagedType.LPWStr)] string arguments,
+            uint options,
+            out uint processId);
+    }
 }
 '@
 Add-Type -TypeDefinition $interop -ErrorAction Stop
