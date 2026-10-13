@@ -9,6 +9,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from data_porter import convert
+from ui_preferences import load_preferences, save_preferences
 
 
 class PorterGUI(tk.Tk):
@@ -17,6 +18,11 @@ class PorterGUI(tk.Tk):
         self.title("CSV / JSONL ローカル移行ツール")
         self.geometry("810x415")
         self.rootdir = tk.StringVar()
+        self._preferences_warning = ""
+        try:
+            self.rootdir.set(load_preferences("LocalDataPorter", ("rootdir",)).get("rootdir", ""))
+        except (OSError, ValueError) as exc:
+            self._preferences_warning = str(exc)
         self.source = tk.StringVar()
         self.destination = tk.StringVar()
         self.status = tk.StringVar(value="フォルダとファイルを選択してください。元データは上書きしません。")
@@ -41,9 +47,20 @@ class PorterGUI(tk.Tk):
         ttk.Button(row, text="事前確認", command=lambda: self.submit(True)).pack(side="left", padx=(0, 8))
         self.run_button = ttk.Button(row, text="変換する", command=lambda: self.submit(False))
         self.run_button.pack(side="left")
+        ttk.Button(row, text="作業フォルダ設定を保存", command=self.save_user_preferences).pack(side="left", padx=(8, 0))
         ttk.Label(body, textvariable=self.status, wraplength=770).grid(
             row=7, column=0, columnspan=3, sticky="w", pady=10)
+        if self._preferences_warning:
+            self.status.set("保存設定を読み込めませんでした（元データは変更しません）: " + self._preferences_warning)
         self.after(120, self.poll)
+
+    def save_user_preferences(self) -> None:
+        try:
+            save_preferences("LocalDataPorter", {"rootdir": self.rootdir.get()}, ("rootdir",))
+            self.status.set("作業フォルダ設定をローカルに保存しました。")
+        except (OSError, ValueError) as exc:
+            self.status.set(f"設定保存エラー: {exc}")
+            messagebox.showerror("設定保存失敗", str(exc))
 
     def _line(self, parent, row, label, variable, choose):
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=5)
@@ -124,5 +141,8 @@ if __name__ == "__main__":
     elif "--e2e-test" in sys.argv:
         from gui_e2e_harness import run
         run(PorterGUI)
+    elif "--preferences-ci" in sys.argv:
+        from preferences_ci import run
+        run(PorterGUI, "LocalDataPorter", {"rootdir": "C:\\QA\\日本語プロジェクト\\001"})
     else:
         PorterGUI().mainloop()
