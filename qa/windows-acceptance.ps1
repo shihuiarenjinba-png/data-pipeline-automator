@@ -108,6 +108,8 @@ $evidenceDir = Join-Path $mfile.DirectoryName "qa-evidence"
 if (-not (Test-Path -LiteralPath $evidenceDir)) {
     New-Item -ItemType Directory -Path $evidenceDir -ErrorAction Stop | Out-Null
 }
+$signerSubject = $null
+if ($signature.SignerCertificate) { $signerSubject = [string]$signature.SignerCertificate.Subject }
 $report = [ordered]@{
     schema="windows_qa_evidence_v1"
     created_utc=(Get-Date).ToUniversalTime().ToString("o")
@@ -117,7 +119,7 @@ $report = [ordered]@{
     exe_hash_matches_build_manifest=$true
     exe_sha256=$hash
     executable_signature_status=[string]$signature.Status
-    signature_subject=if ($signature.SignerCertificate) { [string]$signature.SignerCertificate.Subject } else { $null }
+    signature_subject=$signerSubject
     distribution_file_count=$files.Count
     defender=$defender
     manual_checks=$cases
