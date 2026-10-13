@@ -30,7 +30,7 @@ $root = [IO.Path]::GetFullPath((Join-Path $env:LOCALAPPDATA ("Packages\" + $Pack
 $marker = [IO.Path]::GetFullPath($MarkerPath)
 if (-not $marker.StartsWith($root + [IO.Path]::DirectorySeparatorChar,
                            [StringComparison]::OrdinalIgnoreCase) -or
-    $marker -notmatch '\\(qa_msix_(before|after)_upgrade|qa_prefs_(write|verify))\.json
+    $marker -notmatch '\\(qa_msix_(before|after)_upgrade|qa_prefs_(write|verify))\.json$') {
     throw "Marker path must be a QA-only file inside the installed app LocalState"
 }
 if (Test-Path -LiteralPath $marker) { throw "Marker already exists; refusing overwrite" }
