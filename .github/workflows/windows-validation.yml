@@ -1,6 +1,9 @@
 name: Windows Validation - Data Porter
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - validation/msix-install-lifecycle-20261013
 permissions:
   contents: read
 jobs:
@@ -27,6 +30,9 @@ jobs:
       - name: Build and verify unsigned TEST-IDENTITY MSIX prototype
         shell: pwsh
         run: .\qa\build-msix-preflight.ps1 -TestIdentity
+      - name: Ephemeral signed MSIX installation, update and cleanup test
+        shell: pwsh
+        run: .\qa\msix-install-lifecycle-ci.ps1 -EphemeralRunner
       - name: Record unsigned validation manifest (artifact quota workaround)
         shell: pwsh
         run: |
