@@ -1,6 +1,9 @@
 name: Windows Validation - Data Porter
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - validation/real-preferences-20261014
 permissions:
   contents: read
 jobs:
@@ -47,7 +50,8 @@ jobs:
             "- Package SHA-256 inventory and Authenticode: QA evidence collected (NOT release clearance)",
             "- QA MSIX pack/unpack hash check: succeeded with synthetic test identity (unsigned)",
             "- MSIX packaged GUI activation and LocalState preservation: verified in ephemeral Windows runner",
-            "- Store certification and real customer settings migration: NOT TESTED",
+            "- Real GUI preferences save/reload across MSIX update: passed if preceding lifecycle gate succeeded",
+            "- Store certification and historical customer data migration: NOT TESTED",
             "- Signed: false; sales release: false",
             "- Artifact upload: disabled because repository storage quota is exceeded",
             "- Binaries are ephemeral in GitHub Actions and cannot be downloaded from this run"
