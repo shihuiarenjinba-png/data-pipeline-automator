@@ -1,0 +1,11 @@
+{
+  "displayName": "Local Data Porter",
+  "exeName": "LocalDataPorter",
+  "appId": "LocalDataPorter",
+  "brandAbbreviation": "LDP",
+  "needsBundledBrowser": false,
+  "productClass": "Windows paid data utility",
+  "storeStatus": "HOLD_OFFICIAL_PARTNER_IDENTITY_REQUIRED",
+  "commercialLicense": "NOT_CERTIFIED",
+  "entryPoint": "data_porter_gui.py"
+}
