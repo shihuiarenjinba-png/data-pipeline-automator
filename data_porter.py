@@ -111,7 +111,24 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
                     "columns": columns, "source_sha256": _sha(src),
                     "dry_run": dry_run, "csv_formula_values_escaped": 0,
                     "source_format": kind, "target_format": out_kind}
+    if out_kind == "csv":
+        result["csv_formula_values_to_escape"] = sum(
+            _escape_spreadsheet_formula(value) != value
+            for row in rows for value in row.values()
+        )
+    else:
+        result["csv_formula_values_to_escape"] = 0
     if dry_run:
+        sample = rows[:5]
+        result["preview_input_rows"] = sample
+        result["preview_output_rows"] = [
+            {key: _escape_spreadsheet_formula(value) for key, value in row.items()}
+            for row in sample
+        ] if out_kind == "csv" else sample
+        result["preview_note"] = (
+            "最大5行の変換予測です。実際の保存や書込みは行っていません。"
+            "CSV向けの数式対策では文字列が変更されます。"
+        )
         return result
     dst.parent.mkdir(parents=True, exist_ok=True)
     # No overwrites. Stage under the destination folder and claim final filename
