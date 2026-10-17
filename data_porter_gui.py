@@ -9,6 +9,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from data_porter import convert
+from porter_ui_helpers import suggested_output
 from ui_preferences import load_preferences, save_preferences
 
 
@@ -34,11 +35,10 @@ class PorterGUI(tk.Tk):
         ttk.Label(body, text="ローカルデータ移行（CSV ⇄ JSONL）",
                   font=("Segoe UI", 16, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 18))
         self._line(body, 1, "作業フォルダ", self.rootdir, lambda: filedialog.askdirectory())
-        self._line(body, 2, "入力ファイル", self.source,
-                   lambda: filedialog.askopenfilename(filetypes=[("CSV / JSON Lines", "*.csv *.jsonl")]))
+        self._line(body, 2, "入力ファイル", self.source, self._pick_source)
         self._line(body, 3, "出力先", self.destination,
                    lambda: filedialog.asksaveasfilename(filetypes=[("CSV / JSON Lines", "*.csv *.jsonl")]))
-        ttk.Label(body, text="CSVからJSONLは元の文字列を保持。JSONLからCSVは表計算の数式実行を防ぐため危険な先頭文字をエスケープします。",
+        ttk.Label(body, text="入力ファイルを選ぶと作業フォルダー・未使用の保存先を自動提案します。\nCSV→JSONLは文字列を保持。JSONL→CSVでは数式実行を避けるため一部の値を変更します。",
                   wraplength=755).grid(row=4, column=0, columnspan=3, sticky="w", pady=(12, 8))
         self.preview = tk.Text(body, width=80, height=5, wrap="word", state="disabled")
         self.preview.grid(row=5, column=0, columnspan=3, sticky="nsew", pady=8)
@@ -53,6 +53,31 @@ class PorterGUI(tk.Tk):
         if self._preferences_warning:
             self.status.set("保存設定を読み込めませんでした（元データは変更しません）: " + self._preferences_warning)
         self.after(120, self.poll)
+
+    def _pick_source(self) -> str:
+        selected = filedialog.askopenfilename(
+            title="CSV / JSONLの入力ファイルを選択",
+            filetypes=[("CSV / JSON Lines", "*.csv *.jsonl")],
+        )
+        if not selected:
+            return ""
+        source = Path(selected).expanduser().resolve()
+        # New users can simply choose one file; its directory becomes the
+        # permitted workspace unless an existing saved workspace contains it.
+        previous = self.rootdir.get().strip()
+        if not previous or not source.is_relative_to(Path(previous).expanduser().resolve()):
+            self.rootdir.set(str(source.parent))
+        try:
+            destination = suggested_output(source)
+            self.destination.set(str(destination))
+            self.status.set(
+                f"入力選択済み: {source.name} → {destination.name}（未保存）"
+                "。必要なら保存先を変更し、まず「事前確認」を押してください。"
+            )
+        except ValueError as exc:
+            self.destination.set("")
+            self.status.set(str(exc))
+        return str(source)
 
     def save_user_preferences(self) -> None:
         try:
