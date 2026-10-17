@@ -12,3 +12,6 @@ logs/
 /dist/
 *.spec
 .pytest_cache/
+
+store-output/
+store/assets/
