@@ -123,6 +123,11 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
                     "columns": columns, "source_sha256": _sha(src),
                     "dry_run": dry_run, "csv_formula_values_escaped": 0,
                     "source_format": kind, "target_format": out_kind}
+    result["csv_formula_headers_escaped"] = 0
+    result["csv_formula_headers_to_escape"] = (
+        sum(_escape_spreadsheet_formula(col) != col for col in columns)
+        if out_kind == "csv" else 0
+    )
     if out_kind == "csv":
         result["csv_formula_values_to_escape"] = sum(
             _escape_spreadsheet_formula(value) != value
@@ -133,6 +138,10 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
     if dry_run:
         sample = rows[:5]
         result["preview_input_rows"] = sample
+        result["preview_output_columns"] = (
+            [_escape_spreadsheet_formula(col) for col in columns]
+            if out_kind == "csv" else list(columns)
+        )
         result["preview_output_rows"] = [
             {key: _escape_spreadsheet_formula(value) for key, value in row.items()}
             for row in sample
@@ -157,7 +166,10 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
                     f.write(json.dumps(row, ensure_ascii=False, allow_nan=False) + "\n")
             else:
                 writer = csv.DictWriter(f, fieldnames=columns, extrasaction="raise", lineterminator="\n")
-                writer.writeheader()
+                # Output-only escaping: preserve source keys for mapping, but
+                # never write formula-like column names into spreadsheet headers.
+                writer.writerow({key: _escape_spreadsheet_formula(key) for key in columns})
+                result["csv_formula_headers_escaped"] = result["csv_formula_headers_to_escape"]
                 for row in rows:
                     _check_cancel(cancel_event)
                     guarded = {key: _escape_spreadsheet_formula(value) for key, value in row.items()}
