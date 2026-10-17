@@ -1,0 +1,27 @@
+name: Local Data Porter commercial regression
+on:
+  push:
+    branches:
+      - 'codex/commercial-porter-ux-20261018'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  python-qa:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run every unit test including dry-run safety
+        run: python -m unittest discover -s tests -p 'test*.py' -v
+      - name: Compile all Porter and core modules
+        run: python -m compileall -q data_porter.py data_porter_gui.py porter_ui_helpers.py data_pipeline.py ui_preferences.py
+      - name: Report release HOLD
+        run: echo "Python CI is not Windows GUI human acceptance, signed MSIX, WACK, or Microsoft Store approval."
