@@ -17,7 +17,7 @@ class PorterGUI(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("CSV / JSONL ローカル移行ツール")
-        self.geometry("810x415")
+        self.geometry("810x450")
         self.rootdir = tk.StringVar()
         self._preferences_warning = ""
         try:
@@ -29,6 +29,7 @@ class PorterGUI(tk.Tk):
         self.status = tk.StringVar(value="フォルダとファイルを選択してください。元データは上書きしません。")
         self.messages = queue.Queue()
         self.running = False
+        self._cancel_event: threading.Event | None = None
         body = ttk.Frame(self, padding=20)
         body.pack(fill="both", expand=True)
         body.columnconfigure(1, weight=1)
@@ -47,9 +48,13 @@ class PorterGUI(tk.Tk):
         ttk.Button(row, text="事前確認", command=lambda: self.submit(True)).pack(side="left", padx=(0, 8))
         self.run_button = ttk.Button(row, text="変換する", command=lambda: self.submit(False))
         self.run_button.pack(side="left")
+        self.cancel_button = ttk.Button(row, text="中止", command=self.cancel, state="disabled")
+        self.cancel_button.pack(side="left", padx=(8, 0))
         ttk.Button(row, text="作業フォルダ設定を保存", command=self.save_user_preferences).pack(side="left", padx=(8, 0))
+        self.progress = ttk.Progressbar(body, mode="indeterminate")
+        self.progress.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(5, 2))
         ttk.Label(body, textvariable=self.status, wraplength=770).grid(
-            row=7, column=0, columnspan=3, sticky="w", pady=10)
+            row=8, column=0, columnspan=3, sticky="w", pady=10)
         if self._preferences_warning:
             self.status.set("保存設定を読み込めませんでした（元データは変更しません）: " + self._preferences_warning)
         self.after(120, self.poll)
@@ -107,23 +112,40 @@ class PorterGUI(tk.Tk):
             messagebox.showerror("入力エラー", f"入出力は指定の作業フォルダ内にしてください。\n{exc}")
             return
         self.running = True
+        self._cancel_event = threading.Event()
         self.run_button.configure(state="disabled")
-        self.status.set("検証中..." if dry_run else "変換中...")
+        self.cancel_button.configure(state="normal")
+        self.progress.start(15)
+        self.status.set("検証中...中止できます。" if dry_run else "変換中...中止できます。")
         def worker():
             try:
-                result = convert(root, str(source), str(destination), dry_run=dry_run)
+                result = convert(root, str(source), str(destination), dry_run=dry_run,
+                                 cancel_event=self._cancel_event)
                 self.messages.put((True, result))
+            except InterruptedError as exc:
+                self.messages.put((None, str(exc)))
             except Exception as exc:
                 self.messages.put((False, str(exc)))
         threading.Thread(target=worker, daemon=True).start()
+
+    def cancel(self) -> None:
+        if self.running and self._cancel_event is not None:
+            self._cancel_event.set()
+            self.cancel_button.configure(state="disabled")
+            self.status.set("中止要求を受け付けました。安全に停止しています...")
 
     def poll(self) -> None:
         try:
             while True:
                 ok, value = self.messages.get_nowait()
                 self.running = False
+                self._cancel_event = None
                 self.run_button.configure(state="normal")
-                if ok:
+                self.cancel_button.configure(state="disabled")
+                self.progress.stop()
+                if ok is None:
+                    self.status.set(str(value))
+                elif ok:
                     rendered = json.dumps(value, ensure_ascii=False, indent=2)
                     self.preview.configure(state="normal")
                     self.preview.delete("1.0", "end")
