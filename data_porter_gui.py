@@ -16,7 +16,7 @@ from ui_preferences import load_preferences, save_preferences
 class PorterGUI(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("CSV / JSONL ローカル移行ツール")
+        self.title("Local Data Porter — CSV / JSONL ローカル移行")
         self.geometry("810x450")
         self.rootdir = tk.StringVar()
         self._preferences_warning = ""
@@ -33,7 +33,7 @@ class PorterGUI(tk.Tk):
         body = ttk.Frame(self, padding=20)
         body.pack(fill="both", expand=True)
         body.columnconfigure(1, weight=1)
-        ttk.Label(body, text="ローカルデータ移行（CSV ⇄ JSONL）",
+        ttk.Label(body, text="Local Data Porter — CSV ⇄ JSONL",
                   font=("Segoe UI", 16, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 18))
         self._line(body, 1, "作業フォルダ", self.rootdir, lambda: filedialog.askdirectory())
         self._line(body, 2, "入力ファイル", self.source, self._pick_source)
