@@ -14,6 +14,8 @@ class BuildIsolationContract(unittest.TestCase):
         self.assertNotIn('Join-Path $root ".venv\\Scripts\\python.exe"', builder)
         self.assertIn("python", builder.lower())
         self.assertIn("unittest discover", builder)
+        self.assertIn("pythonBits", builder)
+        self.assertIn('-c "import struct; print(struct.calcsize(\'P\') * 8)"', builder)
         self.assertIn("PYTHONDONTWRITEBYTECODE", builder)
         self.assertIn("MSIX_AUDIT.json", builder)
         self.assertNotIn("Remove-AppxPackage", builder)
