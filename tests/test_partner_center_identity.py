@@ -12,7 +12,7 @@ class StoreSlotConsistencyTests(unittest.TestCase):
     def test_confirmed_identity_and_display_name(self):
         config = json.loads((ROOT / "store" / "product.json").read_text(encoding="utf-8"))
         record = json.loads((ROOT / "store" / "partner_center_registration.json").read_text(encoding="utf-8"))
-        self.assertEqual(record["repository"], ROOT.name)
+        self.assertEqual(record["repository"], config["repository"])
         self.assertEqual(config["displayName"], record["displayName"])
         self.assertEqual(config["displayName"], "Local Data Porter")
         self.assertEqual(record["partnerCenterState"], "EXISTING_CONFIRMED")
