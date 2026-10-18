@@ -10,5 +10,6 @@
   "entryPoint": "data_porter_gui.py",
   "partnerCenterRegistration": "STORE_IDENTITY_RECORDED_SCREENSHOT_VERIFIED",
   "msixPackageStatus": "NOT_BUILT",
-  "notes": "Store display name verified 2026-10-18. Previous development display name: Local Data Porter. exeName/appId are local app fields, not official Package Identity. No certification submission."
+  "notes": "Store display name verified 2026-10-18. Previous development display name: Local Data Porter. exeName/appId are local app fields, not official Package Identity. No certification submission.",
+  "repository": "data-pipeline-automator"
 }
