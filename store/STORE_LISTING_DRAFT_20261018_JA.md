@@ -1,8 +1,8 @@
 # Local Data Porter — Microsoft Store商品ページ原稿（準備段階）
 
-**状態：未登録/未確認の正式Identity・販売HOLD。Store未提出。**
+**状態：Partner Center商品枠・正式Identity確認済み（2026-10-18ユーザー提供画面）。MSIX未生成・アップロード未確認・認証提出禁止・販売HOLD。**
 
-## 商品名（候補）
+## 正式Store商品名（作成済み）
 Local Data Porter
 
 ## 短い説明（原稿）
@@ -24,7 +24,7 @@ CSVエクスポートの変換・移行を担当する事務・IT担当者
 すべての値を文字列として扱い、階層JSON、型の完全保持、添付ファイル、元サービスとの完全互換は対象外です。CSV数式安全対策によって出力文字列が変化する場合があります。
 
 ## 未入力・確認待ち
-- 正式Store Product Identity / Package Family Name：Partner Center確認後に記録
+- 正式Store Product Identity / Package Family Name：登録済み。`store/partner_center_registration.json`を参照。
 - 製品名のStore可用性・商標・カテゴリ：未確定
 - 価格：未確定。Document Version Auditの既存980円下書きは変更しない。
 - 配布地域と言語：所有者判断待ち
@@ -34,9 +34,9 @@ CSVエクスポートの変換・移行を担当する事務・IT担当者
 - 公開認証：実機・ライセンス・品質ゲートを終えるまで行わない
 
 ## 操作順序（Partner Center）
-1. Apps and gamesで既存同名商品を検索。既存枠があれば再利用し、重複作成しない。
-2. 新規候補のみ、MSIX or PWA appとして名前の可用性を確認し、予約する。
-3. Product identityの正式値を `store/partner_center_registration.json` へ反映（機密情報は記録しない）。
+1. 既存の商品枠を再利用する。正式Store IDは `store/partner_center_registration.json` を参照し、重複作成しない。
+2. この製品は既に名前予約・商品枠作成済み。再予約は不要。
+3. Product identityをスクリーンショットと登録JSONで突合済み。PublisherとPFNをビルド時に再照合する。
 4. 画像の権利と4サイズのロゴを承認して `store/assets/` に配置。
 5. Windows上で `store/build-msix.ps1` でパッケージ候補を生成し、`store/verify-upload-inputs.py --msix <実際のファイル>` を実行。
 6. Product release → Start submissionで下書き開始。Packagesに指定MSIXをアップロードし、保存。
@@ -46,3 +46,8 @@ CSVエクスポートの変換・移行を担当する事務・IT担当者
 公式：https://learn.microsoft.com/en-us/windows/apps/publish/publish-your-app/msix/upload-app-packages
 
 > この原稿は正確性と非誇張を優先した内部ドラフトであり、実機確認前に機能全体の保証をしない。
+
+## 2026-10-18 商品枠照合結果
+- 画面提供による正式Store Identityの確認済み。元コードのEXE名・appIdとPackage/Identity/Nameは**別フィールド**。
+- Microsoft Storeの登録表示名とMSIXマニフェスト表示名は `store/product.json` から取得する。
+- 画像・スクリーンショット・価格・ライセンス・MSIX実ファイルは別途準備。Storeにアップロード/公開したとは扱わない。
