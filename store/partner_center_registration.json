@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "displayName": "Local Data Porter",
+  "repository": "data-pipeline-automator",
+  "branch": "codex/commercial-porter-ux-20261018",
+  "appType": "MSIX_OR_PWA_APP",
+  "targetPackage": "MSIX",
+  "partnerCenterState": "RESERVE_CANDIDATE_NOT_CONFIRMED",
+  "evidence": "First-priority name reservation candidate; local CSV JSONL data migration.",
+  "recordedDate": "2026-10-18",
+  "storeIdentity": {
+    "storeId": null,
+    "packageIdentityName": null,
+    "packageIdentityPublisher": null,
+    "publisherDisplayName": null,
+    "packageFamilyName": null
+  },
+  "nameReservationDate": null,
+  "nameReservationExpiry": null,
+  "packageBuild": "NOT_VERIFIED",
+  "windowsE2e": "NOT_VERIFIED",
+  "wack": "NOT_VERIFIED",
+  "certificationSubmission": "NOT_AUTHORIZED",
+  "salesRelease": "HOLD"
+}
