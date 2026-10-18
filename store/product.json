@@ -5,7 +5,10 @@
   "brandAbbreviation": "LDP",
   "needsBundledBrowser": false,
   "productClass": "Windows paid data utility",
-  "storeStatus": "HOLD_OFFICIAL_PARTNER_IDENTITY_REQUIRED",
+  "storeStatus": "PARTNER_CENTER_PRODUCT_CONFIRMED_PACKAGE_NOT_BUILT",
   "commercialLicense": "NOT_CERTIFIED",
-  "entryPoint": "data_porter_gui.py"
+  "entryPoint": "data_porter_gui.py",
+  "partnerCenterRegistration": "STORE_IDENTITY_RECORDED_SCREENSHOT_VERIFIED",
+  "msixPackageStatus": "NOT_BUILT",
+  "notes": "Partner Center identity confirmed on 2026-10-18. Local Windows GUI, approved logo, package install, WACK, and Store certification not yet verified."
 }
