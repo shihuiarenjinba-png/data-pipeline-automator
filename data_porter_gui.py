@@ -89,10 +89,10 @@ class PorterGUI(tk.Tk):
         """Optional offline discovery; no ads, tracking, browser or Store link."""
         messagebox.showinfo(
             "Okinawa Desktop Tools の製品",
-            "CSVやJSONLを変換した後に、次のWindowsツールも利用できます。\\n\\n"
-            "Spreadsheet Merger：2つのCSV・Excelを照合して統合\\n"
-            "Excel Formula Auditor：数式の不整合候補を点検\\n"
-            "Document Version Audit：文書の変更箇所を比較\\n\\n"
+            "CSVやJSONLを変換した後に、次のWindowsツールも利用できます。\n\n"
+            "Spreadsheet Merger：2つのCSV・Excelを照合して統合\n"
+            "Excel Formula Auditor：数式の不整合候補を点検\n"
+            "Document Version Audit：文書の変更箇所を比較\n\n"
             "Microsoft Storeで公開後、それぞれの正式商品名で検索できます。"
             "各製品は独立して動作します。",
         )
