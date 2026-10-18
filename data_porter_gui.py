@@ -51,6 +51,7 @@ class PorterGUI(tk.Tk):
         self.cancel_button = ttk.Button(row, text="中止", command=self.cancel, state="disabled")
         self.cancel_button.pack(side="left", padx=(8, 0))
         ttk.Button(row, text="作業フォルダ設定を保存", command=self.save_user_preferences).pack(side="left", padx=(8, 0))
+        ttk.Button(row, text="関連する便利なツール", command=self.show_related_tools).pack(side="left", padx=(8, 0))
         self.progress = ttk.Progressbar(body, mode="indeterminate")
         self.progress.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(5, 2))
         ttk.Label(body, textvariable=self.status, wraplength=770).grid(
@@ -83,6 +84,18 @@ class PorterGUI(tk.Tk):
             self.destination.set("")
             self.status.set(str(exc))
         return str(source)
+
+    def show_related_tools(self) -> None:
+        """Optional offline discovery; no ads, tracking, browser or Store link."""
+        messagebox.showinfo(
+            "Okinawa Desktop Tools の製品",
+            "CSVやJSONLを変換した後に、次のWindowsツールも利用できます。\\n\\n"
+            "Spreadsheet Merger：2つのCSV・Excelを照合して統合\\n"
+            "Excel Formula Auditor：数式の不整合候補を点検\\n"
+            "Document Version Audit：文書の変更箇所を比較\\n\\n"
+            "Microsoft Storeで公開後、それぞれの正式商品名で検索できます。"
+            "各製品は独立して動作します。",
+        )
 
     def save_user_preferences(self) -> None:
         try:
