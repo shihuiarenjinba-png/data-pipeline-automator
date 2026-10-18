@@ -2,24 +2,26 @@
   "schemaVersion": 1,
   "displayName": "Local Data Porter",
   "repository": "data-pipeline-automator",
-  "branch": "codex/commercial-porter-ux-20261018",
+  "branch": "codex/tab2-store-upload-prep-20261018",
   "appType": "MSIX_OR_PWA_APP",
   "targetPackage": "MSIX",
-  "partnerCenterState": "RESERVE_CANDIDATE_NOT_CONFIRMED",
-  "evidence": "First-priority name reservation candidate; local CSV JSONL data migration.",
+  "partnerCenterState": "EXISTING_CONFIRMED",
+  "evidence": "Verified directly against user-provided Partner Center screenshot on 2026-10-18. Product exists in draft; Start submission available.",
   "recordedDate": "2026-10-18",
   "storeIdentity": {
-    "storeId": null,
-    "packageIdentityName": null,
-    "packageIdentityPublisher": null,
-    "publisherDisplayName": null,
-    "packageFamilyName": null
+    "storeId": "9N2JSKQJXKV1",
+    "packageIdentityName": "OkinawaDesktopTools.LocalDataPorter",
+    "packageIdentityPublisher": "CN=46263F21-A700-41DB-8C9B-114C22FB82FC",
+    "publisherDisplayName": "Okinawa Desktop Tools",
+    "packageFamilyName": "OkinawaDesktopTools.LocalDataPorter_j8yefg9jgfh58"
   },
   "nameReservationDate": null,
   "nameReservationExpiry": null,
-  "packageBuild": "NOT_VERIFIED",
-  "windowsE2e": "NOT_VERIFIED",
+  "packageBuild": "NOT_BUILT",
+  "windowsE2e": "DEFERRED_BY_OWNER_UNTIL_PACKAGES_PREPARED",
   "wack": "NOT_VERIFIED",
   "certificationSubmission": "NOT_AUTHORIZED",
-  "salesRelease": "HOLD"
+  "salesRelease": "HOLD",
+  "submissionDetail": "Product exists in draft; Start submission available.",
+  "identityEvidence": "USER_SUPPLIED_PARTNER_CENTER_SCREENSHOT_2026-10-18"
 }
