@@ -21,6 +21,18 @@ class LocalDataPorterTests(unittest.TestCase):
             self.assertEqual(rows[1]["text"], "=1+2")
             self.assertEqual((root / "data.csv").read_bytes(), before)
 
+    def test_cp932_csv_preserves_japanese_and_leading_zero_ids(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "入力.csv"
+            source.write_bytes("社員ID,備考\n001,確認済み\n".encode("cp932"))
+            before = source.read_bytes()
+            result = convert(root, source.name, "出力.jsonl")
+            row = json.loads((root / "出力.jsonl").read_text(encoding="utf-8"))
+            self.assertEqual(result["row_count"], 1)
+            self.assertEqual(row, {"社員ID": "001", "備考": "確認済み"})
+            self.assertEqual(source.read_bytes(), before)
+
     def test_jsonl_to_csv_defuses_formulas(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

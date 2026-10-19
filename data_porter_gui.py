@@ -16,8 +16,8 @@ from ui_preferences import load_preferences, save_preferences
 class PorterGUI(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
-        self.title("CSV / JSONL ローカル移行ツール")
-        self.geometry("810x450")
+        self.title("Local Data Porter — CSV / JSONL ローカル移行")
+        self.geometry("900x525")
         self.rootdir = tk.StringVar()
         self._preferences_warning = ""
         try:
@@ -33,7 +33,7 @@ class PorterGUI(tk.Tk):
         body = ttk.Frame(self, padding=20)
         body.pack(fill="both", expand=True)
         body.columnconfigure(1, weight=1)
-        ttk.Label(body, text="ローカルデータ移行（CSV ⇄ JSONL）",
+        ttk.Label(body, text="Local Data Porter — CSV ⇄ JSONL",
                   font=("Segoe UI", 16, "bold")).grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 18))
         self._line(body, 1, "作業フォルダ", self.rootdir, lambda: filedialog.askdirectory())
         self._line(body, 2, "入力ファイル", self.source, self._pick_source)
@@ -50,11 +50,15 @@ class PorterGUI(tk.Tk):
         self.run_button.pack(side="left")
         self.cancel_button = ttk.Button(row, text="中止", command=self.cancel, state="disabled")
         self.cancel_button.pack(side="left", padx=(8, 0))
-        ttk.Button(row, text="作業フォルダ設定を保存", command=self.save_user_preferences).pack(side="left", padx=(8, 0))
+        extras = ttk.Frame(body)
+        extras.grid(row=7, column=0, columnspan=3, sticky="w", pady=(0, 5))
+        ttk.Button(extras, text="サンプルCSVを作る", command=self.make_sample_csv).pack(side="left")
+        ttk.Button(extras, text="作業フォルダ設定を保存", command=self.save_user_preferences).pack(side="left", padx=(10, 0))
+        ttk.Button(extras, text="関連する便利なツール", command=self.show_related_tools).pack(side="left", padx=(10, 0))
         self.progress = ttk.Progressbar(body, mode="indeterminate")
-        self.progress.grid(row=7, column=0, columnspan=3, sticky="ew", pady=(5, 2))
-        ttk.Label(body, textvariable=self.status, wraplength=770).grid(
-            row=8, column=0, columnspan=3, sticky="w", pady=10)
+        self.progress.grid(row=8, column=0, columnspan=3, sticky="ew", pady=(5, 2))
+        ttk.Label(body, textvariable=self.status, wraplength=860).grid(
+            row=9, column=0, columnspan=3, sticky="w", pady=10)
         if self._preferences_warning:
             self.status.set("保存設定を読み込めませんでした（元データは変更しません）: " + self._preferences_warning)
         self.after(120, self.poll)
@@ -83,6 +87,39 @@ class PorterGUI(tk.Tk):
             self.destination.set("")
             self.status.set(str(exc))
         return str(source)
+
+    def make_sample_csv(self) -> None:
+        """Beginner tutorial data: no API, no personal data and no overwrite."""
+        chosen = filedialog.asksaveasfilename(
+            title="サンプルCSVを新規保存",
+            defaultextension=".csv",
+            initialfile="local_data_porter_example.csv",
+            filetypes=[("CSV", "*.csv")],
+        )
+        if not chosen:
+            return
+        try:
+            path = Path(chosen).expanduser().resolve()
+            with path.open("x", encoding="utf-8-sig", newline="") as stream:
+                stream.write("employee_id,amount,note\n001,1200,テスト\n002,450,サンプル\n")
+            self.rootdir.set(str(path.parent))
+            self.source.set(str(path))
+            self.destination.set(str(suggested_output(path)))
+            self.status.set("サンプルCSVを新規保存しました。事前確認で変換結果を確認してください。")
+        except (OSError, ValueError) as exc:
+            messagebox.showerror("サンプル保存エラー", str(exc))
+
+    def show_related_tools(self) -> None:
+        """Optional offline discovery; no ads, tracking, browser or Store link."""
+        messagebox.showinfo(
+            "Okinawa Desktop Tools の製品",
+            "CSVやJSONLを変換した後に、次のWindowsツールも利用できます。\n\n"
+            "Spreadsheet Merger：2つのCSV・Excelを照合して統合\n"
+            "Excel Formula Auditor：数式の不整合候補を点検\n"
+            "Document Version Audit：文書の変更箇所を比較\n\n"
+            "Microsoft Storeで公開後、それぞれの正式商品名で検索できます。"
+            "各製品は独立して動作します。",
+        )
 
     def save_user_preferences(self) -> None:
         try:

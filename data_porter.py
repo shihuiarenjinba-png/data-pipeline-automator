@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import os
 import tempfile
@@ -53,7 +54,15 @@ def _reader(path: Path, kind: str, *,
     if path.stat().st_size > MAX_BYTES:
         raise ValueError("Input larger than safety limit")
     if kind == "csv":
-        with path.open("r", encoding="utf-8-sig", newline="") as f:
+        raw = path.read_bytes()
+        try:
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            try:
+                text = raw.decode("cp932")
+            except UnicodeDecodeError as exc:
+                raise ValueError("CSV must be UTF-8 or CP932") from exc
+        with io.StringIO(text, newline="") as f:
             dr = csv.DictReader(f, strict=True)
             columns = dr.fieldnames
             if not columns or not all(columns) or len(columns) != len(set(columns)):
@@ -117,10 +126,13 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
     out_kind = dst.suffix.lower().removeprefix(".")
     if {kind, out_kind} != {"csv", "jsonl"}:
         raise ValueError("Only CSV <-> JSONL conversion supported")
+    before_sha = _sha(src)
     columns, rows = _reader(src, kind, cancel_event=cancel_event)
     _check_cancel(cancel_event)
+    if _sha(src) != before_sha:
+        raise ValueError("入力ファイルが読み込み中に変更されました。再度実行してください。")
     result: dict = {"input": str(src), "output": str(dst), "row_count": len(rows),
-                    "columns": columns, "source_sha256": _sha(src),
+                    "columns": columns, "source_sha256": before_sha,
                     "dry_run": dry_run, "csv_formula_values_escaped": 0,
                     "source_format": kind, "target_format": out_kind}
     result["csv_formula_headers_escaped"] = 0
@@ -178,6 +190,8 @@ def convert(root_dir: str | Path, input_name: str, output_name: str, *,
             f.flush()
             os.fsync(f.fileno())
         _check_cancel(cancel_event)
+        if _sha(src) != before_sha:
+            raise ValueError("変換中に入力ファイルが変更されたため保存を中止しました。")
         os.link(temp, dst)
     finally:
         temp.unlink(missing_ok=True)
