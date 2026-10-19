@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 import os
 import tempfile
@@ -53,7 +54,15 @@ def _reader(path: Path, kind: str, *,
     if path.stat().st_size > MAX_BYTES:
         raise ValueError("Input larger than safety limit")
     if kind == "csv":
-        with path.open("r", encoding="utf-8-sig", newline="") as f:
+        raw = path.read_bytes()
+        try:
+            text = raw.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            try:
+                text = raw.decode("cp932")
+            except UnicodeDecodeError as exc:
+                raise ValueError("CSV must be UTF-8 or CP932") from exc
+        with io.StringIO(text, newline="") as f:
             dr = csv.DictReader(f, strict=True)
             columns = dr.fieldnames
             if not columns or not all(columns) or len(columns) != len(set(columns)):
